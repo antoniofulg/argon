@@ -1,4 +1,5 @@
 require('./bootstrap');
+require('./fontawesome');
 
 import Vue from 'vue'
 import App from './App.vue'
