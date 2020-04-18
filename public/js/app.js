@@ -35631,7 +35631,7 @@ module.exports = function escape(url) {
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*! nouislider - 13.1.4 - 3/20/2019 */
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*! nouislider - 14.2.0 - 3/27/2020 */
 (function(factory) {
     if (true) {
         // AMD. Register as an anonymous module.
@@ -35643,7 +35643,7 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
 })(function() {
     "use strict";
 
-    var VERSION = "13.1.4";
+    var VERSION = "14.2.0";
 
     //region Helper Methods
 
@@ -35730,7 +35730,7 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
 
     // http://youmightnotneedjquery.com/#add_class
     function addClass(el, className) {
-        if (el.classList) {
+        if (el.classList && !/\s/.test(className)) {
             el.classList.add(className);
         } else {
             el.className += " " + className;
@@ -36320,7 +36320,7 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             throw new Error("noUiSlider (" + VERSION + "): 'padding' option must be a positive number(s).");
         }
 
-        if (parsed.padding[0] + parsed.padding[1] >= 100) {
+        if (parsed.padding[0] + parsed.padding[1] > 100) {
             throw new Error("noUiSlider (" + VERSION + "): 'padding' option must not exceed 100% of the range.");
         }
     }
@@ -36523,6 +36523,8 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 connects: "connects",
                 ltr: "ltr",
                 rtl: "rtl",
+                textDirectionLtr: "txt-dir-ltr",
+                textDirectionRtl: "txt-dir-rtl",
                 draggable: "draggable",
                 drag: "state-drag",
                 tap: "state-tap",
@@ -36718,6 +36720,14 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 addClass(addTarget, options.cssClasses.horizontal);
             } else {
                 addClass(addTarget, options.cssClasses.vertical);
+            }
+
+            var textDirection = getComputedStyle(addTarget).direction;
+
+            if (textDirection === "rtl") {
+                addClass(addTarget, options.cssClasses.textDirectionRtl);
+            } else {
+                addClass(addTarget, options.cssClasses.textDirectionLtr);
             }
 
             return addNodeTo(addTarget, options.cssClasses.base);
@@ -36949,7 +36959,7 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                     type = group.indexOf(i) > -1 ? PIPS_LARGE_VALUE : isSteps ? PIPS_SMALL_VALUE : PIPS_NO_VALUE;
 
                     // Enforce the 'ignoreFirst' option by overwriting the type for 0.
-                    if (!index && ignoreFirst) {
+                    if (!index && ignoreFirst && i !== high) {
                         type = 0;
                     }
 
@@ -37140,7 +37150,11 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             if (touch) {
                 // Returns true if a touch originated on the target.
                 var isTouchOnTarget = function(checkTouch) {
-                    return checkTouch.target === eventTarget || eventTarget.contains(checkTouch.target);
+                    return (
+                        checkTouch.target === eventTarget ||
+                        eventTarget.contains(checkTouch.target) ||
+                        (checkTouch.target.shadowRoot && checkTouch.target.shadowRoot.contains(eventTarget))
+                    );
                 };
 
                 // In the case of touchstart events, we need to make sure there is still no more than one
@@ -37197,8 +37211,8 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
         }
 
         // Find handle closest to a certain percentage on the slider
-        function getClosestHandle(proposal) {
-            var closest = 100;
+        function getClosestHandle(clickedPosition) {
+            var smallestDifference = 100;
             var handleNumber = false;
 
             scope_Handles.forEach(function(handle, index) {
@@ -37207,11 +37221,19 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                     return;
                 }
 
-                var pos = Math.abs(scope_Locations[index] - proposal);
+                var handlePosition = scope_Locations[index];
+                var differenceWithThisHandle = Math.abs(handlePosition - clickedPosition);
 
-                if (pos < closest || (pos === 100 && closest === 100)) {
+                // Initial state
+                var clickAtEdge = differenceWithThisHandle === 100 && smallestDifference === 100;
+
+                // Difference with this handle is smaller than the previously checked handle
+                var isCloser = differenceWithThisHandle < smallestDifference;
+                var isCloserAfter = differenceWithThisHandle <= smallestDifference && clickedPosition > handlePosition;
+
+                if (isCloser || isCloserAfter || clickAtEdge) {
                     handleNumber = index;
-                    closest = pos;
+                    smallestDifference = differenceWithThisHandle;
                 }
             });
 
@@ -37420,6 +37442,8 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
 
             var horizontalKeys = ["Left", "Right"];
             var verticalKeys = ["Down", "Up"];
+            var largeStepKeys = ["PageDown", "PageUp"];
+            var edgeKeys = ["Home", "End"];
 
             if (options.dir && !options.ort) {
                 // On an right-to-left slider, the left and right keys act inverted
@@ -37427,40 +37451,68 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             } else if (options.ort && !options.dir) {
                 // On a top-to-bottom slider, the up and down keys act inverted
                 verticalKeys.reverse();
+                largeStepKeys.reverse();
             }
 
             // Strip "Arrow" for IE compatibility. https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key
             var key = event.key.replace("Arrow", "");
-            var isDown = key === verticalKeys[0] || key === horizontalKeys[0];
-            var isUp = key === verticalKeys[1] || key === horizontalKeys[1];
 
-            if (!isDown && !isUp) {
+            var isLargeDown = key === largeStepKeys[0];
+            var isLargeUp = key === largeStepKeys[1];
+            var isDown = key === verticalKeys[0] || key === horizontalKeys[0] || isLargeDown;
+            var isUp = key === verticalKeys[1] || key === horizontalKeys[1] || isLargeUp;
+            var isMin = key === edgeKeys[0];
+            var isMax = key === edgeKeys[1];
+
+            if (!isDown && !isUp && !isMin && !isMax) {
                 return true;
             }
 
             event.preventDefault();
 
-            var direction = isDown ? 0 : 1;
-            var steps = getNextStepsForHandle(handleNumber);
-            var step = steps[direction];
+            var to;
 
-            // At the edge of a slider, do nothing
-            if (step === null) {
-                return false;
+            if (isUp || isDown) {
+                var multiplier = 5;
+                var direction = isDown ? 0 : 1;
+                var steps = getNextStepsForHandle(handleNumber);
+                var step = steps[direction];
+
+                // At the edge of a slider, do nothing
+                if (step === null) {
+                    return false;
+                }
+
+                // No step set, use the default of 10% of the sub-range
+                if (step === false) {
+                    step = scope_Spectrum.getDefaultStep(scope_Locations[handleNumber], isDown, 10);
+                }
+
+                if (isLargeUp || isLargeDown) {
+                    step *= multiplier;
+                }
+
+                // Step over zero-length ranges (#948);
+                step = Math.max(step, 0.0000001);
+
+                // Decrement for down steps
+                step = (isDown ? -1 : 1) * step;
+
+                to = scope_Values[handleNumber] + step;
+            } else if (isMax) {
+                // End key
+                to = options.spectrum.xVal[options.spectrum.xVal.length - 1];
+            } else {
+                // Home key
+                to = options.spectrum.xVal[0];
             }
 
-            // No step set, use the default of 10% of the sub-range
-            if (step === false) {
-                step = scope_Spectrum.getDefaultStep(scope_Locations[handleNumber], isDown, 10);
-            }
+            setHandle(handleNumber, scope_Spectrum.toStepping(to), true, true);
 
-            // Step over zero-length ranges (#948);
-            step = Math.max(step, 0.0000001);
-
-            // Decrement for down steps
-            step = (isDown ? -1 : 1) * step;
-
-            valueSetHandle(handleNumber, scope_Values[handleNumber] + step, true);
+            fireEvent("slide", handleNumber);
+            fireEvent("update", handleNumber);
+            fireEvent("change", handleNumber);
+            fireEvent("set", handleNumber);
 
             return false;
         }
@@ -37569,7 +37621,9 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                             // Event is fired by tap, true or false
                             tap || false,
                             // Left offset of the handle, in relation to the slider
-                            scope_Locations.slice()
+                            scope_Locations.slice(),
+                            // add the slider public API to an accessible parameter when this is unavailable
+                            scope_Self
                         );
                     });
                 }
@@ -37710,8 +37764,10 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             // Convert the value to the slider stepping/range.
             scope_Values[handleNumber] = scope_Spectrum.fromStepping(to);
 
-            var rule = "translate(" + inRuleOrder(transformDirection(to, 0) - scope_DirOffset + "%", "0") + ")";
-            scope_Handles[handleNumber].style[options.transformRule] = rule;
+            var translation = 10 * (transformDirection(to, 0) - scope_DirOffset);
+            var translateRule = "translate(" + inRuleOrder(translation + "%", "0") + ")";
+
+            scope_Handles[handleNumber].style[options.transformRule] = translateRule;
 
             updateConnect(handleNumber);
             updateConnect(handleNumber + 1);
@@ -37813,10 +37869,15 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 setHandle(handleNumber, resolveToValue(values[handleNumber], handleNumber), true, false);
             });
 
-            // Second pass. Now that all base values are set, apply constraints
-            scope_HandleNumbers.forEach(function(handleNumber) {
-                setHandle(handleNumber, scope_Locations[handleNumber], true, true);
-            });
+            var i = scope_HandleNumbers.length === 1 ? 0 : 1;
+
+            // Secondary passes. Now that all base values are set, apply constraints.
+            // Iterate all handles to ensure constraints are applied for the entire slider (Issue #1009)
+            for (; i < scope_HandleNumbers.length; ++i) {
+                scope_HandleNumbers.forEach(function(handleNumber) {
+                    setHandle(handleNumber, scope_Locations[handleNumber], true, true);
+                });
+            }
 
             setZindex();
 
@@ -38314,6 +38375,20 @@ var isLocalhost = function () { return Boolean(
     )
 ); }
 
+var waitWindowLoad
+// https://github.com/yyx990803/register-service-worker/pull/33#discussion_r394181861
+if (typeof window !== 'undefined') {
+  // Typically, a browser that supports `serviceWorker` should also have supported
+  // `Promise`. But as this package can be used in environments without service
+  // worker support (in that case it would do nothing), there's a chance that
+  // `Promise` does not exist. So we must check for its existence first.
+  if (typeof Promise !== 'undefined') {
+    waitWindowLoad = new Promise(function (resolve) { return window.addEventListener('load', resolve); })
+  } else {
+    waitWindowLoad = { then: function (cb) { return window.addEventListener('load', cb); } }
+  }
+}
+
 function register (swUrl, hooks) {
   if ( hooks === void 0 ) hooks = {};
 
@@ -38330,7 +38405,7 @@ function register (swUrl, hooks) {
   }
 
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
+    waitWindowLoad.then(function () {
       if (isLocalhost()) {
         // This is running on localhost. Lets check if a service worker still exists or not.
         checkValidServiceWorker(swUrl, emit, registrationOptions)
@@ -38340,9 +38415,19 @@ function register (swUrl, hooks) {
       } else {
         // Is not local host. Just register service worker
         registerValidSW(swUrl, emit, registrationOptions)
+        navigator.serviceWorker.ready.then(function (registration) {
+          emit('ready', registration)
+        })
       }
     })
   }
+}
+
+function handleError (emit, error) {
+  if (!navigator.onLine) {
+    emit('offline')
+  }
+  emit('error', error)
 }
 
 function registerValidSW (swUrl, emit, registrationOptions) {
@@ -38375,9 +38460,7 @@ function registerValidSW (swUrl, emit, registrationOptions) {
         }
       }
     })
-    .catch(function (error) {
-      emit('error', error)
-    })
+    .catch(function (error) { return handleError(emit, error); })
 }
 
 function checkValidServiceWorker (swUrl, emit, registrationOptions) {
@@ -38399,13 +38482,7 @@ function checkValidServiceWorker (swUrl, emit, registrationOptions) {
         registerValidSW(swUrl, emit, registrationOptions)
       }
     })
-    .catch(function (error) {
-      if (!navigator.onLine) {
-        emit('offline')
-      } else {
-        emit('error', error)
-      }
-    })
+    .catch(function (error) { return handleError(emit, error); })
 }
 
 function unregister () {
@@ -60011,16 +60088,16 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _fortawesome_fontawesome_svg_core__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @fortawesome/fontawesome-svg-core */ "./node_modules/@fortawesome/fontawesome-svg-core/index.es.js");
-/* harmony import */ var _fortawesome_free_solid_svg_icons__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @fortawesome/free-solid-svg-icons */ "./node_modules/@fortawesome/free-solid-svg-icons/index.es.js");
-/* harmony import */ var _fortawesome_free_regular_svg_icons__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @fortawesome/free-regular-svg-icons */ "./node_modules/@fortawesome/free-regular-svg-icons/index.es.js");
-/* harmony import */ var _fortawesome_free_brands_svg_icons__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @fortawesome/free-brands-svg-icons */ "./node_modules/@fortawesome/free-brands-svg-icons/index.es.js");
+/* harmony import */ var _fortawesome_fontawesome_svg_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @fortawesome/fontawesome-svg-core */ "./node_modules/@fortawesome/fontawesome-svg-core/index.es.js");
+/* harmony import */ var _fortawesome_free_solid_svg_icons__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @fortawesome/free-solid-svg-icons */ "./node_modules/@fortawesome/free-solid-svg-icons/index.es.js");
+/* harmony import */ var _fortawesome_free_regular_svg_icons__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @fortawesome/free-regular-svg-icons */ "./node_modules/@fortawesome/free-regular-svg-icons/index.es.js");
+/* harmony import */ var _fortawesome_free_brands_svg_icons__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @fortawesome/free-brands-svg-icons */ "./node_modules/@fortawesome/free-brands-svg-icons/index.es.js");
 
 
 
 
-_fortawesome_fontawesome_svg_core__WEBPACK_IMPORTED_MODULE_1__["library"].add(_fortawesome_free_regular_svg_icons__WEBPACK_IMPORTED_MODULE_3__["far"], _fortawesome_free_solid_svg_icons__WEBPACK_IMPORTED_MODULE_2__["fas"], _fortawesome_free_brands_svg_icons__WEBPACK_IMPORTED_MODULE_4__["fab"]);
-_fortawesome_fontawesome_svg_core__WEBPACK_IMPORTED_MODULE_1__["dom"].watch();
+_fortawesome_fontawesome_svg_core__WEBPACK_IMPORTED_MODULE_0__["library"].add(_fortawesome_free_regular_svg_icons__WEBPACK_IMPORTED_MODULE_2__["far"], _fortawesome_free_solid_svg_icons__WEBPACK_IMPORTED_MODULE_1__["fas"], _fortawesome_free_brands_svg_icons__WEBPACK_IMPORTED_MODULE_3__["fab"]);
+_fortawesome_fontawesome_svg_core__WEBPACK_IMPORTED_MODULE_0__["dom"].watch();
 
 /***/ }),
 
