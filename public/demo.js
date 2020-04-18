@@ -3789,7 +3789,7 @@ var render = function() {
           staticClass: "card-footer d-flex justify-content-end",
           class: _vm.type === "dark" ? "bg-transparent" : ""
         },
-        [_c("base-pagination", { attrs: { total: "30" } })],
+        [_c("base-pagination", { attrs: { total: 30 } })],
         1
       )
     ]
@@ -4569,8 +4569,7 @@ function chartOptions(Chart) {
     },
     ticks: {
       padding: 20
-    },
-    maxBarThickness: 10
+    }
   });
   return options;
 }
