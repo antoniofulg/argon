@@ -43988,6 +43988,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _plugins_argon_dashboard__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./plugins/argon-dashboard */ "./resources/js/plugins/argon-dashboard.js");
 __webpack_require__(/*! ./bootstrap */ "./resources/js/bootstrap.js");
 
+__webpack_require__(/*! ./fontawesome */ "./resources/js/fontawesome.js");
+
 
 
 
@@ -46054,6 +46056,28 @@ __webpack_require__.r(__webpack_exports__);
     document.body.removeEventListener("click", el.clickOutsideEvent);
   }
 });
+
+/***/ }),
+
+/***/ "./resources/js/fontawesome.js":
+/*!*************************************!*\
+  !*** ./resources/js/fontawesome.js ***!
+  \*************************************/
+/*! no exports provided */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+!(function webpackMissingModule() { var e = new Error("Cannot find module '@fortawesome/fontawesome-svg-core'"); e.code = 'MODULE_NOT_FOUND'; throw e; }());
+!(function webpackMissingModule() { var e = new Error("Cannot find module '@fortawesome/free-solid-svg-icons'"); e.code = 'MODULE_NOT_FOUND'; throw e; }());
+!(function webpackMissingModule() { var e = new Error("Cannot find module '@fortawesome/free-regular-svg-icons'"); e.code = 'MODULE_NOT_FOUND'; throw e; }());
+!(function webpackMissingModule() { var e = new Error("Cannot find module '@fortawesome/free-brands-svg-icons'"); e.code = 'MODULE_NOT_FOUND'; throw e; }());
+
+
+
+
+!(function webpackMissingModule() { var e = new Error("Cannot find module '@fortawesome/fontawesome-svg-core'"); e.code = 'MODULE_NOT_FOUND'; throw e; }()).add(!(function webpackMissingModule() { var e = new Error("Cannot find module '@fortawesome/free-regular-svg-icons'"); e.code = 'MODULE_NOT_FOUND'; throw e; }()), !(function webpackMissingModule() { var e = new Error("Cannot find module '@fortawesome/free-solid-svg-icons'"); e.code = 'MODULE_NOT_FOUND'; throw e; }()), !(function webpackMissingModule() { var e = new Error("Cannot find module '@fortawesome/free-brands-svg-icons'"); e.code = 'MODULE_NOT_FOUND'; throw e; }()));
+!(function webpackMissingModule() { var e = new Error("Cannot find module '@fortawesome/fontawesome-svg-core'"); e.code = 'MODULE_NOT_FOUND'; throw e; }()).watch();
 
 /***/ }),
 
